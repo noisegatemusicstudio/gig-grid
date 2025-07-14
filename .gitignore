@@ -39,6 +39,10 @@ node_modules/
 .expo/
 .env*
 
+amplify/.config/
+amplify/team-provider-info.json
+.expo/
+
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
 amplify/.config/local-*
@@ -60,6 +64,26 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
+
+# Prevent Amplify local state & team-specific info
 amplify/.config/
 amplify/team-provider-info.json
-.expo/
+
+# Ignore generated AWS config
+aws-exports.js
+
+# If you ever move aws-exports.js into src/, ignore that too:
+# src/aws-exports.js
+
+# Native build folders (Expo prebuild/bare)
+android/
+ios/
+
+# GraphQL client artifacts (can be generated as needed)
+src/graphql/
+
+# Optional: lock Expo’s shared data
+.expo-shared/
+
+# Expo go cache (your home)
+~/.expo/
