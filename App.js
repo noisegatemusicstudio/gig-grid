@@ -1,4 +1,5 @@
-import React from "react";
+import "react-native-get-random-values";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   FlatList,
@@ -6,49 +7,72 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  Button,
 } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-/**
- * Milestone 2: Add Navigation & Detail Screen
- * ------------------------------------------
- * Changes from the starter:
- *   • Integrated React Navigation (native‑stack).
- *   • HomeScreen lists bands; tapping a card navigates to BandScreen.
- *   • BandScreen shows simple detail content (placeholder).
- *
- * Next steps (once this works):
- *   1. Replace the static DATA with a backend call (Firestore / Supabase).
- *   2. Add Cart & Checkout screens plus global cart state (Context/Zustand).
- *   3. Introduce NativeWind or Tailwind RN for styling.
- */
+// 🟣 AWS Amplify – configure **before** DataStore import
+import { Amplify } from "aws-amplify";
+import awsconfig from "./src/aws-exports";
+Amplify.configure(awsconfig);
 
-const DATA = [
-  { id: "1", band: "The Rolling Codes", item: "T‑Shirt", price: 20 },
-  { id: "2", band: "Null Pointers", item: "Hoodie", price: 35 },
-];
+import { DataStore } from "@aws-amplify/datastore";
+import { Band } from "./src/models";
+
+const Stack = createNativeStackNavigator();
 
 function HomeScreen({ navigation }) {
+  const [bands, setBands] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    DataStore.start();
+    const sub = DataStore.observeQuery(Band).subscribe(({ items }) => {
+      setBands(items);
+      setLoading(false);
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  const addDemoRow = () => {
+    DataStore.save(
+      new Band({
+        band: "Live Local",
+        item: "Sticker Pack",
+        price: 5,
+        desc: "Inserted from device",
+      })
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.center, { flex: 1 }]}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
+      style={styles.card}
       onPress={() => navigation.navigate("Band", { band: item })}
     >
-      <View style={styles.card}>
-        <Text style={styles.band}>{item.band}</Text>
-        <Text style={styles.item}>{`${item.item} — $${item.price}`}</Text>
-      </View>
+      <Text style={styles.title}>{item.band}</Text>
+      <Text>
+        {item.item} — ${item.price}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
       <FlatList
-        data={DATA}
+        data={bands}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        ListHeaderComponent={<Text style={styles.title}>Band Merch Store</Text>}
-        contentContainerStyle={styles.listPadding}
       />
     </SafeAreaView>
   );
@@ -57,20 +81,14 @@ function HomeScreen({ navigation }) {
 function BandScreen({ route }) {
   const { band } = route.params;
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.detailCard}>
-        <Text style={styles.band}>{band.band}</Text>
-        <Text style={styles.item}>{`${band.item} — $${band.price}`}</Text>
-        <Text style={styles.desc}>
-          {/* Placeholder; replace with real product description */}
-          High‑quality cotton apparel. Worldwide shipping.
-        </Text>
-      </View>
+    <SafeAreaView style={styles.detail}>
+      <Text style={styles.title}>{band.band}</Text>
+      <Text style={styles.subtitle}>{band.item}</Text>
+      <Text style={styles.price}>${band.price}</Text>
+      {band.desc ? <Text style={styles.desc}>{band.desc}</Text> : null}
     </SafeAreaView>
   );
 }
-
-const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
@@ -79,7 +97,7 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: "Band Merch Store" }}
+          options={{ title: "Gig‑Grid Merch" }}
         />
         <Stack.Screen
           name="Band"
@@ -92,51 +110,15 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  listPadding: {
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 16,
-  },
   card: {
     padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    backgroundColor: "#f2f2f2",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: "#ccc",
   },
-  detailCard: {
-    margin: 16,
-    padding: 24,
-    borderRadius: 12,
-    backgroundColor: "#f9f9f9",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  band: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  item: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  desc: {
-    fontSize: 14,
-    color: "#666",
-  },
+  title: { fontSize: 18, fontWeight: "600" },
+  subtitle: { fontSize: 16, marginTop: 8 },
+  price: { fontSize: 20, marginTop: 12, fontWeight: "bold" },
+  desc: { marginTop: 12, fontSize: 14, color: "#555" },
+  detail: { flex: 1, padding: 16 },
+  center: { justifyContent: "center", alignItems: "center" },
 });
