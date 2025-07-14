@@ -8,87 +8,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Button,
 } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-// 🟣 AWS Amplify – configure **before** DataStore import
 import { Amplify } from "aws-amplify";
-import awsconfig from "./src/aws-exports";
+import awsconfig from "./aws-exports";
 Amplify.configure(awsconfig);
 
 import { DataStore } from "@aws-amplify/datastore";
 import { Band } from "./src/models";
 
 const Stack = createNativeStackNavigator();
-
-function HomeScreen({ navigation }) {
-  const [bands, setBands] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    DataStore.start();
-    const sub = DataStore.observeQuery(Band).subscribe(({ items }) => {
-      setBands(items);
-      setLoading(false);
-    });
-    return () => sub.unsubscribe();
-  }, []);
-
-  const addDemoRow = () => {
-    DataStore.save(
-      new Band({
-        band: "Live Local",
-        item: "Sticker Pack",
-        price: 5,
-        desc: "Inserted from device",
-      })
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.center, { flex: 1 }]}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate("Band", { band: item })}
-    >
-      <Text style={styles.title}>{item.band}</Text>
-      <Text>
-        {item.item} — ${item.price}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <FlatList
-        data={bands}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-      />
-    </SafeAreaView>
-  );
-}
-
-function BandScreen({ route }) {
-  const { band } = route.params;
-  return (
-    <SafeAreaView style={styles.detail}>
-      <Text style={styles.title}>{band.band}</Text>
-      <Text style={styles.subtitle}>{band.item}</Text>
-      <Text style={styles.price}>${band.price}</Text>
-      {band.desc ? <Text style={styles.desc}>{band.desc}</Text> : null}
-    </SafeAreaView>
-  );
-}
 
 export default function App() {
   return (
@@ -97,7 +28,7 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: "Gig‑Grid Merch" }}
+          options={{ title: "Gig‑Grid Merch" }}
         />
         <Stack.Screen
           name="Band"
@@ -109,16 +40,93 @@ export default function App() {
   );
 }
 
+function HomeScreen({ navigation }) {
+  const [bands, setBands] = useState(null);
+
+  /**
+   * Single observeQuery subscription + client‑side de‑duplication.
+   * --------------------------------------------------------------
+   * If you still have legacy duplicates from early dev builds,
+   * run `DataStore.clear(); DataStore.start();` **once** in a
+   * separate helper (or uninstall / reinstall Expo Go) and then
+   * remove that helper. Keeping clear() in render will prevent
+   * real‑time updates because it wipes the cache on every mount.
+   */
+  useEffect(() => {
+    const sub = DataStore.observeQuery(Band).subscribe(({ items }) => {
+      // 🔄 Remove duplicates locally (same id)
+      const uniq = [];
+      const seen = new Set();
+      for (const it of items) {
+        if (!seen.has(it.id)) {
+          seen.add(it.id);
+          uniq.push(it);
+        }
+      }
+      console.log("📡 observeQuery fired. Rows (deduped):", uniq.length);
+      setBands(uniq);
+    });
+
+    return () => sub.unsubscribe();
+  }, []);
+
+  if (bands === null) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (bands.length === 0) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text>No bands yet – add one from the AppSync console.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={bands}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate("Band", { band: item })}
+          >
+            <Text style={styles.band}>{item.band}</Text>
+            <Text style={styles.item}>
+              {item.item} — ${item.price}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+    </SafeAreaView>
+  );
+}
+
+function BandScreen({ route }) {
+  const { band } = route.params;
+  return (
+    <SafeAreaView style={styles.center}>
+      <Text style={styles.band}>{band.band}</Text>
+      <Text style={styles.item}>{band.item}</Text>
+      <Text>Price: ${band.price}</Text>
+      {band.desc && <Text>{band.desc}</Text>}
+    </SafeAreaView>
+  );
+}
+
 const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: {
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: "#ccc",
   },
-  title: { fontSize: 18, fontWeight: "600" },
-  subtitle: { fontSize: 16, marginTop: 8 },
-  price: { fontSize: 20, marginTop: 12, fontWeight: "bold" },
-  desc: { marginTop: 12, fontSize: 14, color: "#555" },
-  detail: { flex: 1, padding: 16 },
-  center: { justifyContent: "center", alignItems: "center" },
+  band: { fontSize: 18, fontWeight: "600" },
+  item: { fontSize: 14, color: "#555" },
 });
