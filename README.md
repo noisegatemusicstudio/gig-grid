@@ -1,101 +1,129 @@
 # Gig‑Grid
 
-> **Cross‑platform merch marketplace for bands & fans**  
-> Front‑end · React Native + Expo   |   Back‑end · AWS Amplify (AppSync + DataStore)
+> **Cross‑platform merch marketplace for bands and fans**
+> Front‑end: React Native + Expo • Back‑end: AWS Amplify (AppSync + DataStore)
 
 ---
 
-## 📊 Project status (Milestones)
+## 📌 Project vision
 
-| #   | Date (2025) | Goal                | Key outcome                                                  |
-| --- | ----------- | ------------------- | ------------------------------------------------------------ |
-| 0   | Jul 14      | **Bootstrap**       | Expo blank template running on iOS/Android emu.              |
-| 1   | Jul 14      | **Static list UI**  | Hard‑coded list of two bands.                                |
-| 2   | Jul 14      | **Navigation**      | Home → Band detail via `@react-navigation/native-stack`.     |
-| 3   | Jul 14      | **Live data (AWS)** | Amplify 6 + DataStore; band & merch data syncs in real‑time. |
-
-Next planned: **Milestone 4 – Cart & global state (Zustand)** ➜ _in progress_
+Gig‑Grid empowers independent musicians to list and sell merch worldwide via a real‑time, offline‑ready mobile app. Fans can discover bands, browse product lines, add to cart, and complete checkout seamlessly.
 
 ---
 
-## 🏃‍♂️ Quick‑start for new collaborators
+## 🗂 Repo structure
 
-```bash
-# Clone & install
-git clone https://github.com/noisegatemusicstudio/gig-grid.git
-cd gig-grid
-npm install
-
-# Pull Amplify backend (needs IAM creds with AWSAmplifyAdminAccess)
-amplify pull --appId d1meog6tggkra8 --envName dev
-
-# Run the Expo app
-npx expo start --tunnel     # press a / i or scan QR
+```
+.
+├── App.js                    # Entry point: navigation setup
+├── app.json                  # Expo configuration
+├── assets/                   # Images, fonts
+├── src/
+│   ├── components/           # Reusable UI components (e.g., CartButton)
+│   ├── screens/              # Screens: HomeScreen, BandScreen, CartScreen, Checkout…
+│   ├── store/                # Global state with Zustand (cartStore.js)
+│   ├── models/               # Amplify DataStore models (auto-generated)
+│   └── aws-exports.js        # Amplify configuration (auto-generated)
+├── amplify/                  # Amplify backend definitions
+└── package.json              # Dependencies & scripts
 ```
 
-The app auto‑reloads whenever you edit and save **`App.js`**.
+---
 
-### Seed / inspect data
+## 🚀 Getting started
 
-1. Log into the AWS Console → Region **ap‑southeast‑1**.
-2. Navigate: **Services → AppSync → GraphQL APIs** → **giggrid**.
-3. Open **Queries** tab and run:
-   ```graphql
-   query {
-     listBands {
-       items {
-         id
-         band
-         item
-         price
-       }
-     }
-   }
+1. **Clone & install**
+
+   ```bash
+   git clone https://github.com/noisegatemusicstudio/gig-grid.git
+   cd gig-grid
+   npm install
    ```
-4. Or insert test data with `createBand` mutation and watch Expo refresh live.
+
+2. **Configure Amplify**
+   Ensure you have AWS credentials in `~/.aws/credentials` under profile `giggrid-main`.
+
+   ```bash
+   amplify pull --envName prod --profile giggrid-main
+   ```
+
+3. **Run the app**
+
+   ```bash
+   npx expo start -c
+   ```
+
+   - Press **a** (Android) or **i** (iOS), or scan the QR code.
+   - Home screen loads live band data via DataStore.
 
 ---
 
-## 🗄 Repo structure
+## 🔄 Milestone summary
 
-| Path                 | Purpose                                                               |
-| -------------------- | --------------------------------------------------------------------- |
-| `App.js`             | Main React‑Native entry (see current milestone code).                 |
-| `src/models/`        | Amplify‑generated DataStore models.                                   |
-| `src/aws-exports.js` | Amplify config injected by `amplify pull`. **Do not commit secrets**. |
-| `amplify/`           | Backend IaC (CloudFormation) managed by Amplify CLI.                  |
-| `docs/`              | Additional documentation (API contract, diagrams).                    |
-
----
-
-## 🔑 Environment variables
-
-Amplify adds credentials via `src/aws-exports.js`.  
-If you later add Stripe, create a **`.env`** and reference keys via `expo-constants`.
+|  #  | Completed                            |
+| :-: | ------------------------------------ |
+|  0  | Expo blank template                  |
+|  1  | Static list UI                       |
+|  2  | Navigation (Home ↔ Detail)           |
+|  3  | Real‑time data via Amplify DataStore |
+|  4  | Cart flow (Zustand + Cart screen)    |
 
 ---
 
-## 👥 Branch & PR flow
+## 🛒 Cart & state management (Milestone 4)
 
-| Stage       | Command                                                                  |
-| ----------- | ------------------------------------------------------------------------ |
-| New feature | `git checkout -b feat/<name>`                                            |
-| Commit      | `git add -A && git commit -m "feat: ..."`                                |
-| Push & PR   | `git push -u origin feat/<name>` then “Compare & pull request” on GitHub |
-| Merge       | Squash‑merge → tag e.g. `v0.3.0`                                         |
+- **Zustand** manages global cart (`src/store/cartStore.js`)
+- **CartButton** in header with live badge (`src/components/CartButton.js`)
+- **CartScreen** lists items, quantities, subtotal, and clear/remove actions
+- **HomeScreen** and **BandScreen** import and use cart store
 
 ---
 
-## 🛣 Roadmap (Q3 2025)
+## 🛠 Scripts & tooling
 
-1. Milestone 4 – Cart store & Cart UI (Zustand).
-2. Milestone 5 – Stripe checkout (`@stripe/stripe-react-native`).
-3. Milestone 6 – CI/CD: EAS Build + TestFlight / Play Store.
-4. Milestone 7 – Web PWA output via Expo Router.
-5. Milestone 8 – Admin dashboard for bands (web).
+| Command           | Description                 |
+| ----------------- | --------------------------- |
+| `npm start`       | `expo start`                |
+| `npm run ios`     | iOS simulator               |
+| `npm run android` | Android emulator            |
+| `npm run lint`    | ESLint + Prettier           |
+| `npm run test`    | Jest unit tests             |
+| `amplify push`    | Deploy backend updates      |
+| `amplify pull`    | Sync backend config locally |
 
 ---
 
-## 📄 License
+## 🏷 Branching & PRs
 
-© 2025 Rahul Mishra. B
+- **main** – production
+- **feat/**\* – feature branches
+- **fix/**\* – bug fixes
+- **chore/**\* – tooling/config
+
+> Example:
+>
+> ```bash
+> git checkout -b feat/checkout
+> # code → git commit -m "feat: integrate Stripe checkout"
+> git push -u origin feat/checkout
+> ```
+
+---
+
+## 📅 Next steps (Milestone 5)
+
+- **Integrate Stripe**: `@stripe/stripe-react-native` for payments
+- **Persist orders**: Add `Order` model in GraphQL schema → DataStore
+- **Order history**: Screen listing completed orders
+- **CI/CD**: Set up EAS build and TestFlight/Play Store publishing
+
+---
+
+## 📖 Learning resources
+
+- **React Native + Expo**: docs.expo.dev
+- **AWS Amplify**: amplify.aws/docs
+- **GraphQL + AppSync**: docs.aws.amazon.com/appsync
+- **Zustand**: docs.pmnd.rs/zustand
+
+---
