@@ -3,60 +3,151 @@ import {
   SafeAreaView,
   FlatList,
   Text,
+  View,
   TouchableOpacity,
   ActivityIndicator,
+  Button,
 } from "react-native";
+import { Band } from "../../models";
 import { DataStore } from "@aws-amplify/datastore";
-import { Band } from "../models";
+import { useTheme } from "../contexts/ThemeContext";
 import styles from "../styles";
 
 export default function HomeScreen({ navigation }) {
   const [bands, setBands] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { isDark } = useTheme();
+
   useEffect(() => {
-    const sub = DataStore.observeQuery(Band).subscribe(({ items }) => {
-      const uniq = [];
-      const seen = new Set();
-      for (const it of items) {
-        if (!seen.has(it.id)) {
-          seen.add(it.id);
-          uniq.push(it);
-        }
+    let timeoutId;
+    
+    const loadBands = async () => {
+      try {
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          console.log('DataStore timeout - setting empty bands array');
+          setBands([]);
+          setIsLoading(false);
+        }, 10000); // 10 second timeout
+
+        const sub = DataStore.observeQuery(Band).subscribe({
+          next: ({ items }) => {
+            clearTimeout(timeoutId);
+            console.log('Bands loaded:', items.length);
+            
+            if (items.length === 0) {
+              setBands([]);
+            } else {
+              const map = new Map();
+              items.forEach((it) => {
+                if (!map.has(it.band)) map.set(it.band, []);
+                map.get(it.band).push(it);
+              });
+              setBands(Array.from(map.keys()));
+            }
+            setIsLoading(false);
+          },
+          error: (err) => {
+            clearTimeout(timeoutId);
+            console.error('DataStore error:', err);
+            setError(err.message || 'Failed to load bands');
+            setBands([]);
+            setIsLoading(false);
+          }
+        });
+
+        return () => {
+          clearTimeout(timeoutId);
+          sub.unsubscribe();
+        };
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.error('Failed to setup DataStore subscription:', err);
+        setError('Failed to connect to database');
+        setBands([]);
+        setIsLoading(false);
       }
-      setBands(uniq);
-    });
-    return () => sub.unsubscribe();
+    };
+
+    loadBands();
   }, []);
 
-  if (bands === null) {
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" />
+      <SafeAreaView style={[styles.containerDark, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+        <View style={[styles.centerDark, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={isDark ? "#fff" : "#000"} />
+          <Text style={{ color: isDark ? "#fff" : "#000", marginTop: 16 }}>
+            Loading bands...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
-  if (bands.length === 0) {
+
+  if (error) {
     return (
-      <SafeAreaView style={styles.center}>
-        <Text>No bands yet – add one from the console.</Text>
+      <SafeAreaView style={[styles.containerDark, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+        <View style={[styles.centerDark, { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+          <Text style={{ color: isDark ? "#fff" : "#000", fontSize: 18, textAlign: 'center', marginBottom: 16 }}>
+            Unable to load bands
+          </Text>
+          <Text style={{ color: isDark ? "#aaa" : "#666", textAlign: 'center', marginBottom: 20 }}>
+            {error}
+          </Text>
+          <Button 
+            title="Try Again" 
+            onPress={() => {
+              setError(null);
+              setIsLoading(true);
+              setBands(null);
+            }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!bands || bands.length === 0) {
+    return (
+      <SafeAreaView style={[styles.containerDark, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
+        <View style={[styles.centerDark, { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+          <Text style={{ color: isDark ? "#fff" : "#000", fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>
+            Welcome to Gig Grid!
+          </Text>
+          <Text style={{ color: isDark ? "#aaa" : "#666", textAlign: 'center', marginBottom: 20 }}>
+            No bands found. Bands will appear here once they create profiles.
+          </Text>
+          <Button 
+            title="Refresh" 
+            onPress={() => {
+              setIsLoading(true);
+              setBands(null);
+            }}
+          />
+        </View>
       </SafeAreaView>
     );
   }
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.containerDark, { backgroundColor: isDark ? "#121212" : "#fff" }]}>
       <FlatList
         data={bands}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(name) => name}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate("Band", { band: item })}
-          >
-            <Text style={styles.band}>{item.band}</Text>
-            <Text style={styles.item}>
-              {item.item} — ${item.price}
-            </Text>
-          </TouchableOpacity>
+          <View style={[styles.cardDark, { backgroundColor: isDark ? "#1e1e1e" : "#f5f5f5" }]}>
+            <Text style={[styles.bandDark, { color: isDark ? "#fff" : "#000" }]}>{item}</Text>
+            <View style={{ flexDirection: "row", marginTop: 8 }}>
+              <Button
+                title="Portfolio"
+                color="#0ff"
+                onPress={() => navigation.navigate("Band", { name: item })}
+              />
+            </View>
+          </View>
         )}
+        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: isDark ? "#333" : "#e0e0e0" }]} />}
       />
     </SafeAreaView>
   );
