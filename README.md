@@ -21,12 +21,14 @@
 |  7  | **AWS Cost Optimization**               |   ✅   | Free tier + monitoring |
 
 **🎯 CURRENT PROJECT STATUS:**
-- ✅ **Production-Ready Authentication** - Login/signup with email verification and debugging tools
+- ✅ **Production-Ready Authentication** - Complete login/signup/email verification flow with AWS Cognito
+- ✅ **Comprehensive Error Handling** - Centralized error management with meaningful user messages  
+- ✅ **Email Verification Flow** - 6-digit code verification with resend functionality
 - ✅ **AWS Free Tier Optimized** - $23-43/month cost savings achieved
-- ✅ **Professional Email Branding** - Custom domain email delivery
-- ✅ **Comprehensive Error Handling** - User-friendly error messages with detailed debugging
-- ✅ **Mobile UX Optimized** - iOS/Android specific optimizations
-- ✅ **Developer-Ready** - Complete onboarding documentation with troubleshooting tools
+- ✅ **Professional Email Branding** - Custom domain email delivery via AWS SES
+- ✅ **Global Error Boundary** - Catches unhandled exceptions with user-friendly recovery
+- ✅ **Mobile UX Optimized** - iOS/Android specific optimizations with theme support
+- ✅ **Developer-Ready** - Complete debugging tools and comprehensive documentation
 ---
 
 ## 📅 Immediate Next Steps (Priority Order)
@@ -143,40 +145,67 @@ aws cognito-idp admin-confirm-sign-up --user-pool-id ap-southeast-1_vNCXkUoLo --
 ```
 
 ### **🛡️ Error Handling System**
-The app includes comprehensive error handling to ensure users never see generic error messages:
+The app features a comprehensive error handling system that ensures users never encounter generic error messages:
 
 #### **Centralized Error Management**
-- **`src/utils/errorHandler.js`** - Centralized error handling utilities
-- **`src/components/ErrorBoundary.js`** - Global error boundary for unhandled exceptions
-- **Meaningful Messages** - All errors provide actionable user guidance
-- **Debug Logging** - Enhanced logging for unknown errors to aid debugging
+- **`src/utils/errorHandler.js`** - Centralized utilities for consistent error handling across the app
+- **`src/components/ErrorBoundary.js`** - Global error boundary that catches unhandled JavaScript exceptions
+- **Meaningful Messages** - All errors provide clear, actionable user guidance instead of technical jargon
+- **Safe Navigation** - Null-safe property access prevents crashes from undefined values
+- **Enhanced Debugging** - Development mode shows detailed error information for faster debugging
 
 #### **Error Categories Handled**
 ```javascript
-// Authentication Errors
-- UserNotConfirmedException → "Email Verification Required" 
-- NotAuthorizedException → "Invalid Credentials"
-- NetworkError → "Connection Problem"
-- Unknown errors → Enhanced fallback with debug info
+// Authentication Errors (getAuthErrorMessage)
+UserNotConfirmedException → "Please verify your email address"
+NotAuthorizedException → "Invalid email or password" 
+NetworkError → "Please check your internet connection"
+UserNotFoundException → "No account found with this email"
+CodeMismatchException → "Invalid verification code"
 
-// DataStore Errors  
-- Network issues → "Connection issue - check internet"
-- Authentication → "Please try logging in again"
-- Configuration → "Please restart the app"
+// Signup Errors (getSignupErrorMessage)  
+UsernameExistsException → "Account already exists with this email"
+InvalidPasswordException → "Password requirements not met"
+InvalidParameterException → "Please check your information"
 
-// Global Error Boundary
-- JavaScript exceptions → User-friendly restart option
-- Development mode → Debug information displayed
-- Production mode → Error reporting option
+// DataStore Errors (getDataStoreErrorMessage)
+Network issues → "Connection problem - please try again"
+Authentication → "Please sign in again"
+Configuration → "Please restart the app"
+```
+
+#### **Email Verification Flow**
+Complete email verification system with AWS Cognito integration:
+
+- **VerifyEmailScreen** - Dedicated screen for entering 6-digit verification codes
+- **Code Validation** - Real-time input validation with proper formatting
+- **Resend Functionality** - Users can request new verification codes if needed
+- **Automatic Profile Creation** - User profile created in DataStore after successful verification
+- **Navigation Flow** - Seamless signup → verify → login flow with proper navigation guards
+
+#### **Global Error Boundary Features**
+```javascript
+// Catches unhandled JavaScript exceptions
+- User-friendly error display with restart option
+- Development mode: Shows detailed stack trace and error info
+- Production mode: Provides error reporting option  
+- Prevents app crashes from propagating to users
+- Maintains app state and allows graceful recovery
 ```
 
 #### **Testing Error Handling**
 ```bash
-# Test authentication errors (use debug script)
+# Test authentication errors
 ./scripts/debug-auth.sh test@example.com
 
-# Test network errors (turn off internet, try actions)
-# Test unknown errors (will be logged with full debug info)
+# Test email verification flow
+# 1. Sign up with valid email
+# 2. Check email for 6-digit code
+# 3. Enter code in VerifyEmailScreen
+# 4. Test resend functionality
+
+# Test network errors (disconnect internet and try actions)
+# Test unknown errors (will be logged with debug context)
 ```
 
 ---
@@ -184,22 +213,43 @@ The app includes comprehensive error handling to ensure users never see generic 
 ## 🔍 Code Quality & Best Practices
 
 ### **Current Implementation Highlights**
-- ✅ **Type Safety**: Comprehensive prop validation and error handling
-- ✅ **Accessibility**: ARIA labels and proper accessibility support
-- ✅ **Performance**: Optimized loading states and error boundaries
-- ✅ **UX**: Proper keyboard handling and form validation
-- ✅ **Security**: Secure authentication flow with proper validation
+- ✅ **Type Safety**: Comprehensive prop validation and error handling with null-safe operations
+- ✅ **Accessibility**: ARIA labels and proper accessibility support for all interactive elements
+- ✅ **Performance**: Optimized loading states, error boundaries, and efficient re-rendering
+- ✅ **UX Excellence**: Proper keyboard handling, form validation, and intuitive navigation flows
+- ✅ **Security**: Secure authentication flow with AWS Cognito and proper validation
+- ✅ **Error Resilience**: Comprehensive error handling system prevents crashes and provides recovery options
+- ✅ **Email Integration**: Complete email verification flow with 6-digit codes and resend functionality
+- ✅ **Theme Consistency**: Full light/dark theme support across all components and screens
 
 ### **Code Organization**
 ```
 src/
 ├── components/     # Reusable UI components
-├── contexts/       # React contexts (Theme, etc.)
+│   ├── CartButton.js       # Shopping cart access button
+│   ├── ErrorBoundary.js    # Global error boundary for exception handling
+│   ├── SettingsButton.js   # Settings screen navigation button  
+│   └── ThemeToggle.js      # Light/dark theme switcher
+├── contexts/       # React contexts
+│   └── ThemeContext.js     # Theme provider and theming logic
 ├── screens/        # Screen components
+│   ├── BandScreen.js       # Band portfolio display
+│   ├── CartScreen.js       # Shopping cart management
+│   ├── HomeScreen.js       # Band listing and navigation
+│   ├── LoginScreen.js      # User authentication
+│   ├── SignupScreen.js     # User registration 
+│   ├── VerifyEmailScreen.js # Email verification with 6-digit codes
+│   └── SettingsScreen.js   # App settings and preferences
 ├── store/          # Zustand state management
+│   └── CartStore.js        # Shopping cart state and actions
 ├── styles/         # Shared styling
+│   └── index.js           # Common style definitions and theme values
 ├── utils/          # Utility functions
+│   ├── errorHandler.js    # Centralized error handling utilities
+│   └── userUtils.js       # User account management helpers
 └── models/         # Amplify DataStore models
+    ├── index.js           # Auto-generated model exports
+    └── schema.js          # Auto-generated GraphQL schema
 ```
 
 ---
@@ -207,11 +257,13 @@ src/
 ## 🎯 Success Metrics & Goals
 
 ### **Technical Metrics**
-- ✅ App loads without crashes
-- ✅ User registration flow works end-to-end  
-- ✅ Real-time data synchronization (when backend is configured)
-- ✅ Responsive design across devices
-- ✅ Offline-first architecture foundation
+- ✅ App loads without crashes and recovers gracefully from errors
+- ✅ Complete user registration and email verification flow works end-to-end  
+- ✅ Real-time data synchronization with AWS AppSync and DataStore
+- ✅ Responsive design across iOS and Android devices with theme support
+- ✅ Offline-first architecture foundation with comprehensive error handling
+- ✅ Production-ready authentication system with AWS Cognito integration
+- ✅ Meaningful error messages throughout the entire application
 
 ### **User Experience Goals**
 - 🎯 Intuitive onboarding flow for bands and fans
@@ -363,7 +415,14 @@ aws cognito-idp admin-update-user-attributes --user-pool-id ap-southeast-1_vNCXk
 # 5. Check SES email delivery status
 # AWS Console → SES → Sending Statistics
 
-# 6. Test with fresh user account
+# 6. Test complete signup flow including email verification
+# - Sign up with valid email address
+# - Check email inbox for 6-digit verification code
+# - Test VerifyEmailScreen functionality
+# - Test resend code functionality
+# - Verify successful login after email verification
+
+# 7. Test with fresh user account
 # Create new test account to isolate issue
 ```
 
@@ -1265,27 +1324,52 @@ const bands = await DataStore.query(Band, Predicates.ALL, {
 **Error Handling Standards**
 ```javascript
 // User-friendly error messages with actionable guidance
-Alert.alert(
-  "Descriptive Title",           // Clear title
-  "Helpful message with next steps."  // Actionable guidance
-);
+import { getAuthErrorMessage, getSignupErrorMessage } from '../utils/errorHandler';
+
+// Authentication errors
+try {
+  await signIn({ username, password });
+} catch (error) {
+  const { title, message } = getAuthErrorMessage(error);
+  Alert.alert(title, message);
+}
+
+// Signup errors with meaningful feedback
+try {
+  await signUp({ username, password, options });
+} catch (error) {
+  const { title, message } = getSignupErrorMessage(error);
+  Alert.alert(title, message);
+}
+
+// Email verification flow
+if (result.nextStep?.signUpStep === 'CONFIRM_SIGN_UP') {
+  navigation.navigate('VerifyEmail', { 
+    username: email,
+    userAttributes: userData 
+  });
+}
 ```
 
 #### **Development Constraints & Guidelines**
 - ✅ **AWS Free Tier**: All solutions must stay within free tier limits
-- ✅ **Offline-First**: App must work without internet connection
-- ✅ **Theme Support**: All UI must support light/dark themes
-- ✅ **Error Handling**: Comprehensive error handling with user-friendly messages
-- ✅ **Mobile UX**: iOS/Android specific optimizations
-- ✅ **Performance**: Optimize for mobile performance (memory, battery)
+- ✅ **Offline-First**: App must work without internet connection using DataStore
+- ✅ **Theme Support**: All UI must support light/dark themes consistently
+- ✅ **Comprehensive Error Handling**: Use centralized error utilities, never show generic errors
+- ✅ **Email Verification**: Support complete signup → verify → login flow
+- ✅ **Mobile UX**: iOS/Android specific optimizations with proper keyboard handling
+- ✅ **Performance**: Optimize for mobile performance (memory, battery, loading states)
+- ✅ **Error Recovery**: Provide graceful fallbacks and recovery options for all failures
 
 #### **When Suggesting Solutions**
 1. **Check Free Tier Impact**: Consider AWS costs for any backend changes
-2. **Follow Existing Patterns**: Use established component and error handling patterns
-3. **Include Testing**: Suggest testing on both iOS and Android
-4. **Consider Offline**: Ensure solutions work with offline-first architecture
-5. **Theme Awareness**: Include theme-based styling in UI suggestions
-6. **Meaningful Errors**: Provide descriptive error messages and handling
+2. **Follow Existing Patterns**: Use established component, error handling, and navigation patterns
+3. **Include Testing**: Suggest testing on both iOS and Android, including edge cases
+4. **Consider Offline**: Ensure solutions work with offline-first DataStore architecture
+5. **Theme Awareness**: Include theme-based styling in all UI suggestions
+6. **Meaningful Errors**: Use centralized error handling utilities, provide descriptive messages
+7. **Email Flow**: Consider impact on signup/verification/login flow for authentication changes
+8. **Error Recovery**: Include graceful fallbacks and recovery mechanisms
 
 #### **Quick Reference Commands**
 ```bash

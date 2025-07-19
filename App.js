@@ -14,6 +14,7 @@ import BandScreen from "./src/screens/BandScreen";
 import CartScreen from "./src/screens/CartScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
+import VerifyEmailScreen from "./src/screens/VerifyEmailScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 
 Amplify.configure(awsconfig);
@@ -57,6 +58,16 @@ export default function App() {
             name="Signup"
             component={SignupScreen}
             options={{ headerTitle: "Sign Up" }}
+          />
+
+          {/* Email Verification */}
+          <Stack.Screen
+            name="VerifyEmail"
+            component={VerifyEmailScreen}
+            options={{ 
+              headerTitle: "Verify Email",
+              headerBackVisible: false, // Prevent going back without verification
+            }}
           />
 
           {/* Home */}

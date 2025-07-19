@@ -79,7 +79,7 @@ export default function SignupScreen({ navigation }) {
       }
 
       // Step 2: Create user with Amplify Auth
-      const { user } = await signUp({
+      const result = await signUp({
         username: email.trim().toLowerCase(),
         password: password.trim(),
         options: {
@@ -89,23 +89,46 @@ export default function SignupScreen({ navigation }) {
         }
       });
 
-      // Step 3: Create user profile in DataStore
-      await DataStore.save(new User({
-        email: email.trim().toLowerCase(),
-        username: username.trim(),
-        role: role.toUpperCase(), // Convert to enum value
-      }));
+      console.log('SignUp result:', result);
 
-      Alert.alert(
-        "Success!", 
-        "Account created successfully! Please check your email for verification.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Home")
-          }
-        ]
-      );
+      // Check if user needs to confirm sign up
+      if (result.nextStep?.signUpStep === 'CONFIRM_SIGN_UP') {
+        Alert.alert(
+          "Check Your Email", 
+          "We've sent a verification code to your email address. Please enter it on the next screen.",
+          [{ 
+            text: "OK", 
+            onPress: () => navigation.navigate('VerifyEmail', { 
+              username: email.trim().toLowerCase(),
+              password: password.trim(),
+              userAttributes: {
+                email: email.trim().toLowerCase(),
+                username: username.trim(),
+                role: role.toUpperCase()
+              }
+            })
+          }]
+        );
+      } else {
+        // User already confirmed or no confirmation needed
+        // Step 3: Create user profile in DataStore
+        await DataStore.save(new User({
+          email: email.trim().toLowerCase(),
+          username: username.trim(),
+          role: role.toUpperCase(), // Convert to enum value
+        }));
+
+        Alert.alert(
+          "Success!", 
+          "Account created successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("Login")
+            }
+          ]
+        );
+      }
 
     } catch (error) {
       const { title, message } = getSignupErrorMessage(error);
