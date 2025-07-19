@@ -196,7 +196,8 @@ src/
 ### Authentication System
 - **User Registration**: Full signup flow with email verification
 - **User Login**: Complete signin flow with AWS Amplify Auth v6
-- **AWS Cognito Integration**: Secure authentication backend
+- **Professional Email Branding**: Verification emails sent from `noisegate.music.studios@gmail.com`
+- **AWS Cognito Integration**: Secure authentication backend with SES email delivery
 - **User Profiles**: DataStore integration for user management
 - **Role-based Access**: FAN and BAND user types
 - **Duplicate Prevention**: Email validation and conflict resolution
@@ -216,7 +217,11 @@ src/
 
 ---
 
-## 🆕 Latest Features (Login Screen Implementation)
+### **🆕 Latest Features (Custom Email Configuration)**
+- **📧 Professional Email Setup**: All verification emails now sent from `noisegate.music.studios@gmail.com`
+- **🎨 Branded Email Templates**: Custom welcome messages with Gig-Grid branding
+- **🔐 AWS SES Integration**: Secure email delivery through Amazon Simple Email Service
+- **🌏 Regional Optimization**: Email service configured in ap-southeast-1 region for optimal delivery
 
 ### **Complete Authentication Flow**
 - **🔐 LoginScreen**: Full signin implementation with AWS Amplify Auth v6
