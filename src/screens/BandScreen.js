@@ -4,13 +4,15 @@ import {
   FlatList,
   Text,
   View,
-  Button,
+  TouchableOpacity,
   ActivityIndicator,
+  Button,
 } from "react-native";
+import { PortfolioItem } from "../../models";
 import { DataStore } from "@aws-amplify/datastore";
-import { Band } from "../../models";
-import { useCart } from "../store/CartStore";
+import { useCartStore } from "../store/CartStore";
 import { useTheme } from "../contexts/ThemeContext";
+import { getDataStoreErrorMessage } from "../utils/errorHandler";
 import styles from "../styles";
 
 export default function BandScreen({ route }) {
@@ -45,8 +47,8 @@ export default function BandScreen({ route }) {
         
       } catch (err) {
         clearTimeout(timeoutId);
-        console.error('Failed to load band items:', err);
-        setError(err.message || 'Failed to load band portfolio');
+        const errorMessage = getDataStoreErrorMessage(err, `loading ${name}'s portfolio`);
+        setError(errorMessage);
         setItems([]);
         setIsLoading(false);
       }

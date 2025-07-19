@@ -1,20 +1,21 @@
 // src/screens/SignupScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
-  Keyboard,
   TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
 } from "react-native";
-import { signUp } from '@aws-amplify/auth';
-import { DataStore } from '@aws-amplify/datastore';
-import { User } from '../../models';
+import { signUp } from "@aws-amplify/auth";
+import { DataStore } from "@aws-amplify/datastore";
+import { User } from "../../models";
 import { useTheme } from "../contexts/ThemeContext";
+import { getSignupErrorMessage } from "../utils/errorHandler";
 
 export default function SignupScreen({ navigation }) {
   const { theme, isLoading } = useTheme();
@@ -37,23 +38,27 @@ export default function SignupScreen({ navigation }) {
 
   const validateForm = () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Email is required");
+      Alert.alert("Email Required", "Please enter your email address to create your account.");
       return false;
     }
-    if (!email.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email");
+    if (!email.includes("@") || !email.includes(".")) {
+      Alert.alert("Invalid Email", "Please enter a valid email address (e.g., yourname@example.com).");
       return false;
     }
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+      Alert.alert("Password Too Short", "Your password must be at least 8 characters long for security.");
       return false;
     }
     if (password !== confirm) {
-      Alert.alert("Error", "Passwords do not match");
+      Alert.alert("Passwords Don't Match", "Please make sure both password fields are identical.");
       return false;
     }
     if (!username.trim()) {
-      Alert.alert("Error", "Username is required");
+      Alert.alert("Username Required", "Please choose a username for your profile.");
+      return false;
+    }
+    if (username.length < 3) {
+      Alert.alert("Username Too Short", "Your username must be at least 3 characters long.");
       return false;
     }
     return true;
@@ -68,13 +73,13 @@ export default function SignupScreen({ navigation }) {
       // Step 1: Check if user already exists in DataStore
       const existingUsers = await DataStore.query(User, c => c.email.eq(email.trim().toLowerCase()));
       if (existingUsers.length > 0) {
-        Alert.alert("Error", "An account with this email already exists");
+        Alert.alert("Account Already Exists", "An account with this email already exists. Try logging in instead or use a different email address.");
         setIsSignupLoading(false);
         return;
       }
 
       // Step 2: Create user with Amplify Auth
-      const { user } = await signUp({
+      const result = await signUp({
         username: email.trim().toLowerCase(),
         password: password.trim(),
         options: {
@@ -84,39 +89,50 @@ export default function SignupScreen({ navigation }) {
         }
       });
 
-      // Step 3: Create user profile in DataStore
-      await DataStore.save(new User({
-        email: email.trim().toLowerCase(),
-        username: username.trim(),
-        role: role.toUpperCase(), // Convert to enum value
-      }));
+      console.log('SignUp result:', result);
 
-      Alert.alert(
-        "Success!", 
-        "Account created successfully! Please check your email for verification.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Home")
-          }
-        ]
-      );
+      // Check if user needs to confirm sign up
+      if (result.nextStep?.signUpStep === 'CONFIRM_SIGN_UP') {
+        Alert.alert(
+          "Check Your Email", 
+          "We've sent a verification code to your email address. Please enter it on the next screen.",
+          [{ 
+            text: "OK", 
+            onPress: () => navigation.navigate('VerifyEmail', { 
+              username: email.trim().toLowerCase(),
+              password: password.trim(),
+              userAttributes: {
+                email: email.trim().toLowerCase(),
+                username: username.trim(),
+                role: role.toUpperCase()
+              }
+            })
+          }]
+        );
+      } else {
+        // User already confirmed or no confirmation needed
+        // Step 3: Create user profile in DataStore
+        await DataStore.save(new User({
+          email: email.trim().toLowerCase(),
+          username: username.trim(),
+          role: role.toUpperCase(), // Convert to enum value
+        }));
+
+        Alert.alert(
+          "Success!", 
+          "Account created successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("Login")
+            }
+          ]
+        );
+      }
 
     } catch (error) {
-      console.error('Signup error:', error);
-      
-      let errorMessage = "Failed to create account";
-      if (error.code === 'UsernameExistsException') {
-        errorMessage = "An account with this email already exists";
-      } else if (error.code === 'InvalidPasswordException') {
-        errorMessage = "Password does not meet requirements";
-      } else if (error.code === 'InvalidParameterException') {
-        errorMessage = "Please check your email format";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      Alert.alert("Signup Failed", errorMessage);
+      const { title, message } = getSignupErrorMessage(error);
+      Alert.alert(title, message);
     } finally {
       setIsSignupLoading(false);
     }
@@ -241,6 +257,23 @@ export default function SignupScreen({ navigation }) {
           {isSignupLoading ? "Creating Account..." : "Sign up"}
         </Text>
       </TouchableOpacity>
+
+      {/* Sign in link */}
+      <View style={styles.signinContainer}>
+        <Text style={[styles.signinPrompt, { color: theme.text + '99' }]}>
+          Already have an account?{" "}
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Login")}
+          accessibilityLabel="Go to sign in"
+          accessible={true}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.signinLink, { color: theme.primary || "#4444DD" }]}>
+            Sign in
+          </Text>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
     </TouchableWithoutFeedback>
   );
@@ -306,5 +339,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#fff",
+  },
+  signinContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  signinPrompt: {
+    fontSize: 16,
+  },
+  signinLink: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
