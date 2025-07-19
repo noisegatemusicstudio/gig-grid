@@ -130,7 +130,7 @@ npm run start:fresh  # Includes auto-cleanup
 | `./scripts/monitor-aws-usage.sh` | Monitor AWS Free Tier usage and costs |
 | `./scripts/debug-auth.sh <email>` | Debug authentication issues for specific user |
 
-### **Debugging & Troubleshooting Scripts**
+### **🔍 Debugging & Troubleshooting Scripts**
 ```bash
 # Authentication debugging
 ./scripts/debug-auth.sh user@example.com
@@ -140,6 +140,43 @@ npm run start:fresh  # Includes auto-cleanup
 
 # Manual user confirmation (if needed)
 aws cognito-idp admin-confirm-sign-up --user-pool-id ap-southeast-1_vNCXkUoLo --username <email> --profile giggrid-main
+```
+
+### **🛡️ Error Handling System**
+The app includes comprehensive error handling to ensure users never see generic error messages:
+
+#### **Centralized Error Management**
+- **`src/utils/errorHandler.js`** - Centralized error handling utilities
+- **`src/components/ErrorBoundary.js`** - Global error boundary for unhandled exceptions
+- **Meaningful Messages** - All errors provide actionable user guidance
+- **Debug Logging** - Enhanced logging for unknown errors to aid debugging
+
+#### **Error Categories Handled**
+```javascript
+// Authentication Errors
+- UserNotConfirmedException → "Email Verification Required" 
+- NotAuthorizedException → "Invalid Credentials"
+- NetworkError → "Connection Problem"
+- Unknown errors → Enhanced fallback with debug info
+
+// DataStore Errors  
+- Network issues → "Connection issue - check internet"
+- Authentication → "Please try logging in again"
+- Configuration → "Please restart the app"
+
+// Global Error Boundary
+- JavaScript exceptions → User-friendly restart option
+- Development mode → Debug information displayed
+- Production mode → Error reporting option
+```
+
+#### **Testing Error Handling**
+```bash
+# Test authentication errors (use debug script)
+./scripts/debug-auth.sh test@example.com
+
+# Test network errors (turn off internet, try actions)
+# Test unknown errors (will be logged with full debug info)
 ```
 
 ---

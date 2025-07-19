@@ -1,20 +1,21 @@
 // src/screens/SignupScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
-  Keyboard,
   TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
 } from "react-native";
-import { signUp } from '@aws-amplify/auth';
-import { DataStore } from '@aws-amplify/datastore';
-import { User } from '../../models';
+import { signUp } from "@aws-amplify/auth";
+import { DataStore } from "@aws-amplify/datastore";
+import { User } from "../../models";
 import { useTheme } from "../contexts/ThemeContext";
+import { getSignupErrorMessage } from "../utils/errorHandler";
 
 export default function SignupScreen({ navigation }) {
   const { theme, isLoading } = useTheme();
@@ -107,31 +108,8 @@ export default function SignupScreen({ navigation }) {
       );
 
     } catch (error) {
-      console.error('Signup error:', error);
-      
-      let errorTitle = "Signup Failed";
-      let errorMessage = "We couldn't create your account. Please try again.";
-      
-      if (error.code === 'UsernameExistsException') {
-        errorTitle = "Account Already Exists";
-        errorMessage = "An account with this email already exists. Try logging in instead or use a different email address.";
-      } else if (error.code === 'InvalidPasswordException') {
-        errorTitle = "Password Requirements Not Met";
-        errorMessage = "Your password doesn't meet our security requirements. Please ensure it has at least 8 characters with a mix of letters, numbers, and symbols.";
-      } else if (error.code === 'InvalidParameterException') {
-        errorTitle = "Invalid Information";
-        errorMessage = "Please check that all fields are filled out correctly. Make sure your email is valid and password meets requirements.";
-      } else if (error.code === 'LimitExceededException') {
-        errorTitle = "Too Many Attempts";
-        errorMessage = "You've made too many signup attempts. Please wait a few minutes before trying again.";
-      } else if (error.code === 'NetworkError' || error.message?.includes('network')) {
-        errorTitle = "Connection Problem";
-        errorMessage = "Please check your internet connection and try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      Alert.alert(errorTitle, errorMessage);
+      const { title, message } = getSignupErrorMessage(error);
+      Alert.alert(title, message);
     } finally {
       setIsSignupLoading(false);
     }

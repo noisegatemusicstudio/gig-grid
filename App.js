@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
 import { ThemeProvider } from "./src/contexts/ThemeContext";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 import CartButton from "./src/components/CartButton";
 import SettingsButton from "./src/components/SettingsButton";
 import HomeScreen from "./src/screens/HomeScreen";
@@ -29,8 +30,9 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <NavigationContainer>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <NavigationContainer>
         <Stack.Navigator 
           initialRouteName="Login"
           screenOptions={{
@@ -103,5 +105,6 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }

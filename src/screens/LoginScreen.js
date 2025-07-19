@@ -1,18 +1,19 @@
 // src/screens/LoginScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
-  Keyboard,
   TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
 } from "react-native";
-import { signIn } from '@aws-amplify/auth';
+import { signIn } from "@aws-amplify/auth";
 import { useTheme } from "../contexts/ThemeContext";
+import { getAuthErrorMessage } from "../utils/errorHandler";
 
 export default function LoginScreen({ navigation }) {
   const { theme, isLoading } = useTheme();
@@ -72,43 +73,9 @@ export default function LoginScreen({ navigation }) {
       );
 
     } catch (error) {
-      console.error('Login error details:', {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        fullError: error
-      });
+      const { title, message } = getAuthErrorMessage(error);
       
-      let errorTitle = "Sign In Failed";
-      let errorMessage = "We couldn't sign you in right now. Please try again.";
-      
-      if (error.code === 'UserNotConfirmedException') {
-        errorTitle = "Email Verification Required";
-        errorMessage = "Your account needs to be verified. Please check your email and click the verification link. If you didn't receive the email, check your spam folder or try signing up again.";
-      } else if (error.code === 'NotAuthorizedException') {
-        errorTitle = "Invalid Credentials";
-        errorMessage = "The email or password you entered is incorrect. Please double-check your credentials and try again.";
-      } else if (error.code === 'UserNotFoundException') {
-        errorTitle = "Account Not Found";
-        errorMessage = "No account exists with this email address. Would you like to create a new account instead?";
-      } else if (error.code === 'InvalidParameterException') {
-        errorTitle = "Invalid Email Format";
-        errorMessage = "Please enter a valid email address (e.g., yourname@example.com) and try again.";
-      } else if (error.code === 'TooManyRequestsException') {
-        errorTitle = "Too Many Attempts";
-        errorMessage = "You've made too many sign-in attempts. Please wait a few minutes before trying again, or reset your password if you've forgotten it.";
-      } else if (error.code === 'LimitExceededException') {
-        errorTitle = "Rate Limit Exceeded";
-        errorMessage = "Too many requests from this device. Please wait 15 minutes before trying again.";
-      } else if (error.code === 'NetworkError' || error.message?.includes('Network')) {
-        errorTitle = "Connection Problem";
-        errorMessage = "Unable to connect to our servers. Please check your internet connection and try again.";
-      } else if (error.message) {
-        errorMessage = `Debug Info: ${error.code || 'NO_CODE'} - ${error.message}. Please try again or contact support if the problem persists.`;
-      }
-      
-      Alert.alert(errorTitle, errorMessage, [
+      Alert.alert(title, message, [
         {
           text: "OK",
           style: "default"

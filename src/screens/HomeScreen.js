@@ -11,6 +11,7 @@ import {
 import { Band } from "../../models";
 import { DataStore } from "@aws-amplify/datastore";
 import { useTheme } from "../contexts/ThemeContext";
+import { getDataStoreErrorMessage } from "../utils/errorHandler";
 import styles from "../styles";
 
 export default function HomeScreen({ navigation }) {
@@ -50,8 +51,8 @@ export default function HomeScreen({ navigation }) {
           },
           error: (err) => {
             clearTimeout(timeoutId);
-            console.error('DataStore error:', err);
-            setError(err.message || 'Failed to load bands');
+            const errorMessage = getDataStoreErrorMessage(err, 'loading bands');
+            setError(errorMessage);
             setBands([]);
             setIsLoading(false);
           }
@@ -63,8 +64,8 @@ export default function HomeScreen({ navigation }) {
         };
       } catch (err) {
         clearTimeout(timeoutId);
-        console.error('Failed to setup DataStore subscription:', err);
-        setError('Failed to connect to database');
+        const errorMessage = getDataStoreErrorMessage(err, 'connecting to database');
+        setError(errorMessage);
         setBands([]);
         setIsLoading(false);
       }
