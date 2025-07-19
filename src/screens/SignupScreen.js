@@ -7,89 +7,201 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
+import { signUp } from '@aws-amplify/auth';
+import { DataStore } from '@aws-amplify/datastore';
+import { User } from '../../models';
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function SignupScreen({ navigation }) {
-  const { isDark } = useTheme();
+  const { theme, isLoading } = useTheme();
 
   const [role, setRole] = useState("Fan");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [username, setUsername] = useState("");
+  const [isSignupLoading, setIsSignupLoading] = useState(false);
 
-  const handleSignup = () => {
-    // TODO: validation / call your backend
-    navigation.navigate("Home"); // temp - jump to home after “sign-up”
+  // Show loading screen while theme is loading
+  if (isLoading || !theme) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  const validateForm = () => {
+    if (!email.trim()) {
+      Alert.alert("Error", "Email is required");
+      return false;
+    }
+    if (!email.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email");
+      return false;
+    }
+    if (password.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters");
+      return false;
+    }
+    if (password !== confirm) {
+      Alert.alert("Error", "Passwords do not match");
+      return false;
+    }
+    if (!username.trim()) {
+      Alert.alert("Error", "Username is required");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSignup = async () => {
+    if (!validateForm()) return;
+    
+    setIsSignupLoading(true);
+    
+    try {
+      // Step 1: Check if user already exists in DataStore
+      const existingUsers = await DataStore.query(User, c => c.email.eq(email.trim().toLowerCase()));
+      if (existingUsers.length > 0) {
+        Alert.alert("Error", "An account with this email already exists");
+        setIsSignupLoading(false);
+        return;
+      }
+
+      // Step 2: Create user with Amplify Auth
+      const { user } = await signUp({
+        username: email.trim().toLowerCase(),
+        password: password.trim(),
+        options: {
+          userAttributes: {
+            email: email.trim().toLowerCase(),
+          }
+        }
+      });
+
+      // Step 3: Create user profile in DataStore
+      await DataStore.save(new User({
+        email: email.trim().toLowerCase(),
+        username: username.trim(),
+        role: role.toUpperCase(), // Convert to enum value
+      }));
+
+      Alert.alert(
+        "Success!", 
+        "Account created successfully! Please check your email for verification.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("Home")
+          }
+        ]
+      );
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      
+      let errorMessage = "Failed to create account";
+      if (error.code === 'UsernameExistsException') {
+        errorMessage = "An account with this email already exists";
+      } else if (error.code === 'InvalidPasswordException') {
+        errorMessage = "Password does not meet requirements";
+      } else if (error.code === 'InvalidParameterException') {
+        errorMessage = "Please check your email format";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert("Signup Failed", errorMessage);
+    } finally {
+      setIsSignupLoading(false);
+    }
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={[styles.title, { color: isDark ? "#fff" : "#000" }]}>Create your account</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+      <Text style={[styles.title, { color: theme.text }]}>Create your account</Text>
 
+      <Text style={[styles.label, { color: theme.text }]}>Email</Text>
       <TextInput
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
+        placeholder="Enter your email"
+        placeholderTextColor={theme.text + '80'}
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
         accessibilityLabel="Email input"
         accessible={true}
         returnKeyType="next"
         textContentType="emailAddress"
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email (e.g. fan@example.com)"
-        placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={[
-          styles.input,
-          { 
-            backgroundColor: isDark ? "#1F1F1F" : "#F2F2F2",
-            color: isDark ? "#fff" : "#000"
-          },
-        ]}
+        autoComplete="email"
+        autoCorrect={false}
       />
 
+      <Text style={[styles.label, { color: theme.text }]}>Username</Text>
       <TextInput
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
+        placeholder="Choose a username"
+        placeholderTextColor={theme.text + '80'}
+        value={username}
+        onChangeText={setUsername}
+        autoCapitalize="none"
+        accessibilityLabel="Username input"
+        accessible={true}
+        returnKeyType="next"
+        textContentType="username"
+        autoComplete="username-new"
+        autoCorrect={false}
+      />
+
+      <Text style={[styles.label, { color: theme.text }]}>Password</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
+        placeholder="Enter your password"
+        placeholderTextColor={theme.text + '80'}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
         accessibilityLabel="Password input"
         accessible={true}
         returnKeyType="next"
-        textContentType="password"
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password (min 8 chars)"
-        placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-        secureTextEntry
-        style={[
-          styles.input,
-          { 
-            backgroundColor: isDark ? "#1F1F1F" : "#F2F2F2",
-            color: isDark ? "#fff" : "#000"
-          },
-        ]}
+        textContentType="newPassword"
+        autoComplete="password-new"
+        passwordRules="minlength: 8;"
+        autoCorrect={false}
+        autoCapitalize="none"
       />
 
+      <Text style={[styles.label, { color: theme.text }]}>Confirm Password</Text>
       <TextInput
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
+        placeholder="Confirm your password"
+        placeholderTextColor={theme.text + '80'}
+        value={confirm}
+        onChangeText={setConfirm}
+        secureTextEntry
         accessibilityLabel="Confirm password input"
         accessible={true}
         returnKeyType="done"
-        textContentType="password"
-        value={confirm}
-        onChangeText={setConfirm}
-        placeholder="Confirm password"
-        placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-        secureTextEntry
-        style={[
-          styles.input,
-          { 
-            backgroundColor: isDark ? "#1F1F1F" : "#F2F2F2",
-            color: isDark ? "#fff" : "#000"
-          },
-        ]}
+        textContentType="newPassword"
+        autoComplete="password-new"
+        autoCorrect={false}
+        autoCapitalize="none"
       />
 
-      {/* Role selector ---------------------------------------------------- */}
+      {/* Role selector */}
+      <Text style={[styles.label, { color: theme.text }]}>I am a...</Text>
       <View style={styles.roleRow}>
         {["Fan", "Band"].map((r, idx) => (
           <TouchableOpacity
@@ -100,14 +212,15 @@ export default function SignupScreen({ navigation }) {
             accessibilityRole="button"
             style={[
               styles.roleBtn,
-              idx === 1 && { marginRight: 0 }, // remove extra gap on last
+              { borderColor: theme.border },
+              idx === 1 && { marginRight: 0 },
               role === r && styles.roleBtnActive,
             ]}
           >
             <Text style={[
-              styles.roleTxt, 
+              styles.roleTxt,
+              { color: role === r ? "#fff" : theme.text },
               role === r && styles.roleTxtActive,
-              { color: role === r ? "#fff" : (isDark ? "#ddd" : "#374151") }
             ]}>
               {r}
             </Text>
@@ -116,20 +229,22 @@ export default function SignupScreen({ navigation }) {
       </View>
 
       <TouchableOpacity
-        style={styles.submit}
+        style={[styles.submit, { opacity: isSignupLoading ? 0.6 : 1 }]}
         onPress={handleSignup}
+        disabled={isSignupLoading}
         accessibilityLabel="Sign up button"
         accessibilityHint="Completes sign up and navigates to home screen"
         accessible={true}
         accessibilityRole="button"
       >
-        <Text style={styles.submitTxt}>Sign up</Text>
+        <Text style={styles.submitTxt}>
+          {isSignupLoading ? "Creating Account..." : "Sign up"}
+        </Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
-
-/* --------------------------------------------------------------------- */
 
 const styles = StyleSheet.create({
   container: {
@@ -139,22 +254,25 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-
   title: {
     fontSize: 28,
     fontWeight: "600",
-    marginBottom: 16,
+    marginBottom: 24,
   },
-
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 8,
+    marginTop: 8,
+  },
   input: {
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     marginBottom: 12,
+    borderWidth: 1,
   },
-
-  /* Role selector */
   roleRow: {
     flexDirection: "row",
     marginBottom: 20,
@@ -163,13 +281,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#444",
     borderRadius: 8,
     alignItems: "center",
     marginRight: 8,
   },
   roleBtnActive: {
-    backgroundColor: "#6D28D9", // Violet-600
+    backgroundColor: "#6D28D9",
     borderColor: "#6D28D9",
   },
   roleTxt: {
@@ -178,13 +295,12 @@ const styles = StyleSheet.create({
   roleTxtActive: {
     fontWeight: "600",
   },
-
-  /* Submit */
   submit: {
     backgroundColor: "#4444DD",
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
+    marginTop: 12,
   },
   submitTxt: {
     fontSize: 18,

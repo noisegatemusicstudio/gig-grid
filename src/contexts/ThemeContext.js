@@ -50,8 +50,30 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  // Define theme colors
+  const lightTheme = {
+    background: '#ffffff',
+    card: '#f8f9fa',
+    text: '#000000',
+    border: '#e1e5e9',
+    primary: '#4444DD',
+    secondary: '#6D28D9',
+  };
+
+  const darkTheme = {
+    background: '#000000',
+    card: '#1f1f1f',
+    text: '#ffffff',
+    border: '#444444',
+    primary: '#4444DD',
+    secondary: '#6D28D9',
+  };
+
+  const theme = isDark ? darkTheme : lightTheme;
+
   const value = {
     isDark,
+    theme,
     themePreference,
     setTheme,
     isLoading,

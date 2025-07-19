@@ -1,5 +1,11 @@
 {
   "AppSyncApiName": "giggrid",
   "DynamoDBBillingMode": "PAY_PER_REQUEST",
-  "DynamoDBEnableServerSideEncryption": false
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authgiggride611bf78",
+      "Outputs.UserPoolId"
+    ]
+  }
 }

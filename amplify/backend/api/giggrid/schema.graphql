@@ -9,3 +9,47 @@ type Band
   price: Int
   desc: String
 }
+
+type User
+  @model
+  @auth(
+    rules: [
+      { allow: owner, operations: [create, read, update, delete] }
+      { allow: public, operations: [read] }
+    ]
+  ) {
+  id: ID!
+  email: String! 
+    @index(name: "byEmail", queryField: "userByEmail")
+    @auth(rules: [
+      { allow: owner }
+      { allow: public, operations: [read] }
+    ])
+  role: UserRole! 
+    @auth(rules: [
+      { allow: owner }
+      { allow: public, operations: [read] }
+    ])
+  username: String
+    @auth(rules: [
+      { allow: owner }
+      { allow: public, operations: [read] }
+    ])
+  profilePicture: String
+    @auth(rules: [
+      { allow: owner }
+      { allow: public, operations: [read] }
+    ])
+  bio: String
+    @auth(rules: [
+      { allow: owner }
+      { allow: public, operations: [read] }
+    ])
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+enum UserRole {
+  FAN
+  BAND
+}

@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Amplify } from 'aws-amplify';
-import awsconfig from './amplifyconfiguration.json';
+import awsconfig from './aws-exports';
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import CartButton from "./src/components/CartButton";
 import SettingsButton from "./src/components/SettingsButton";
