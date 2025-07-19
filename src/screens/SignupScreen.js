@@ -37,23 +37,27 @@ export default function SignupScreen({ navigation }) {
 
   const validateForm = () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Email is required");
+      Alert.alert("Email Required", "Please enter your email address to create your account.");
       return false;
     }
-    if (!email.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email");
+    if (!email.includes("@") || !email.includes(".")) {
+      Alert.alert("Invalid Email", "Please enter a valid email address (e.g., yourname@example.com).");
       return false;
     }
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+      Alert.alert("Password Too Short", "Your password must be at least 8 characters long for security.");
       return false;
     }
     if (password !== confirm) {
-      Alert.alert("Error", "Passwords do not match");
+      Alert.alert("Passwords Don't Match", "Please make sure both password fields are identical.");
       return false;
     }
     if (!username.trim()) {
-      Alert.alert("Error", "Username is required");
+      Alert.alert("Username Required", "Please choose a username for your profile.");
+      return false;
+    }
+    if (username.length < 3) {
+      Alert.alert("Username Too Short", "Your username must be at least 3 characters long.");
       return false;
     }
     return true;
@@ -68,7 +72,7 @@ export default function SignupScreen({ navigation }) {
       // Step 1: Check if user already exists in DataStore
       const existingUsers = await DataStore.query(User, c => c.email.eq(email.trim().toLowerCase()));
       if (existingUsers.length > 0) {
-        Alert.alert("Error", "An account with this email already exists");
+        Alert.alert("Account Already Exists", "An account with this email already exists. Try logging in instead or use a different email address.");
         setIsSignupLoading(false);
         return;
       }
@@ -105,18 +109,29 @@ export default function SignupScreen({ navigation }) {
     } catch (error) {
       console.error('Signup error:', error);
       
-      let errorMessage = "Failed to create account";
+      let errorTitle = "Signup Failed";
+      let errorMessage = "We couldn't create your account. Please try again.";
+      
       if (error.code === 'UsernameExistsException') {
-        errorMessage = "An account with this email already exists";
+        errorTitle = "Account Already Exists";
+        errorMessage = "An account with this email already exists. Try logging in instead or use a different email address.";
       } else if (error.code === 'InvalidPasswordException') {
-        errorMessage = "Password does not meet requirements";
+        errorTitle = "Password Requirements Not Met";
+        errorMessage = "Your password doesn't meet our security requirements. Please ensure it has at least 8 characters with a mix of letters, numbers, and symbols.";
       } else if (error.code === 'InvalidParameterException') {
-        errorMessage = "Please check your email format";
+        errorTitle = "Invalid Information";
+        errorMessage = "Please check that all fields are filled out correctly. Make sure your email is valid and password meets requirements.";
+      } else if (error.code === 'LimitExceededException') {
+        errorTitle = "Too Many Attempts";
+        errorMessage = "You've made too many signup attempts. Please wait a few minutes before trying again.";
+      } else if (error.code === 'NetworkError' || error.message?.includes('network')) {
+        errorTitle = "Connection Problem";
+        errorMessage = "Please check your internet connection and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      Alert.alert("Signup Failed", errorMessage);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsSignupLoading(false);
     }

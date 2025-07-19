@@ -17,6 +17,14 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 
 Amplify.configure(awsconfig);
 
+// Debug: Check if Amplify is configured correctly
+console.log('Amplify configuration loaded:', {
+  region: awsconfig.aws_project_region,
+  userPoolId: awsconfig.aws_user_pools_id,
+  clientId: awsconfig.aws_user_pools_web_client_id,
+  hasConfig: !!awsconfig
+});
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {

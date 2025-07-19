@@ -32,15 +32,15 @@ export default function LoginScreen({ navigation }) {
 
   const validateForm = () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Email is required");
+      Alert.alert("Email Required", "Please enter your email address to continue.");
       return false;
     }
-    if (!email.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email");
+    if (!email.includes("@") || !email.includes(".")) {
+      Alert.alert("Invalid Email", "Please enter a valid email address (e.g., yourname@example.com).");
       return false;
     }
     if (!password.trim()) {
-      Alert.alert("Error", "Password is required");
+      Alert.alert("Password Required", "Please enter your password to sign in.");
       return false;
     }
     return true;
@@ -72,24 +72,55 @@ export default function LoginScreen({ navigation }) {
       );
 
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        code: error.code,
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        fullError: error
+      });
       
-      let errorMessage = "Failed to sign in";
+      let errorTitle = "Sign In Failed";
+      let errorMessage = "We couldn't sign you in right now. Please try again.";
+      
       if (error.code === 'UserNotConfirmedException') {
-        errorMessage = "Please verify your email address before signing in";
+        errorTitle = "Email Verification Required";
+        errorMessage = "Your account needs to be verified. Please check your email and click the verification link. If you didn't receive the email, check your spam folder or try signing up again.";
       } else if (error.code === 'NotAuthorizedException') {
-        errorMessage = "Invalid email or password";
+        errorTitle = "Invalid Credentials";
+        errorMessage = "The email or password you entered is incorrect. Please double-check your credentials and try again.";
       } else if (error.code === 'UserNotFoundException') {
-        errorMessage = "No account found with this email";
+        errorTitle = "Account Not Found";
+        errorMessage = "No account exists with this email address. Would you like to create a new account instead?";
       } else if (error.code === 'InvalidParameterException') {
-        errorMessage = "Please check your email format";
+        errorTitle = "Invalid Email Format";
+        errorMessage = "Please enter a valid email address (e.g., yourname@example.com) and try again.";
       } else if (error.code === 'TooManyRequestsException') {
-        errorMessage = "Too many failed attempts. Please try again later";
+        errorTitle = "Too Many Attempts";
+        errorMessage = "You've made too many sign-in attempts. Please wait a few minutes before trying again, or reset your password if you've forgotten it.";
+      } else if (error.code === 'LimitExceededException') {
+        errorTitle = "Rate Limit Exceeded";
+        errorMessage = "Too many requests from this device. Please wait 15 minutes before trying again.";
+      } else if (error.code === 'NetworkError' || error.message?.includes('Network')) {
+        errorTitle = "Connection Problem";
+        errorMessage = "Unable to connect to our servers. Please check your internet connection and try again.";
       } else if (error.message) {
-        errorMessage = error.message;
+        errorMessage = `Debug Info: ${error.code || 'NO_CODE'} - ${error.message}. Please try again or contact support if the problem persists.`;
       }
       
-      Alert.alert("Login Failed", errorMessage);
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "OK",
+          style: "default"
+        },
+        ...(error.code === 'UserNotFoundException' ? [
+          {
+            text: "Create Account",
+            style: "default",
+            onPress: () => navigation.navigate("Signup")
+          }
+        ] : [])
+      ]);
     } finally {
       setIsLoginLoading(false);
     }
