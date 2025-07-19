@@ -11,6 +11,7 @@ import SettingsButton from "./src/components/SettingsButton";
 import HomeScreen from "./src/screens/HomeScreen";
 import BandScreen from "./src/screens/BandScreen";
 import CartScreen from "./src/screens/CartScreen";
+import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 
@@ -23,7 +24,7 @@ export default function App() {
     <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="Signup"
+          initialRouteName="Login"
           screenOptions={{
             headerStyle: {
               backgroundColor: '#f8f9fa',
@@ -34,11 +35,18 @@ export default function App() {
             },
           }}
         >
+          {/* Login */}
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerTitle: "Sign In" }}
+          />
+
           {/* Signup */}
           <Stack.Screen
             name="Signup"
             component={SignupScreen}
-            options={{ headerTitle: "Signup" }}
+            options={{ headerTitle: "Sign Up" }}
           />
 
           {/* Home */}

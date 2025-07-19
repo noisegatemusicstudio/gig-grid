@@ -241,6 +241,23 @@ export default function SignupScreen({ navigation }) {
           {isSignupLoading ? "Creating Account..." : "Sign up"}
         </Text>
       </TouchableOpacity>
+
+      {/* Sign in link */}
+      <View style={styles.signinContainer}>
+        <Text style={[styles.signinPrompt, { color: theme.text + '99' }]}>
+          Already have an account?{" "}
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Login")}
+          accessibilityLabel="Go to sign in"
+          accessible={true}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.signinLink, { color: theme.primary || "#4444DD" }]}>
+            Sign in
+          </Text>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
     </TouchableWithoutFeedback>
   );
@@ -306,5 +323,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#fff",
+  },
+  signinContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  signinPrompt: {
+    fontSize: 16,
+  },
+  signinLink: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
